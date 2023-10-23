@@ -4,16 +4,33 @@ import "net/http"
 
 type HandleFunc func(ctx *Context)
 
-type Server interface {
+type ICoreServer interface {
 	http.Handler
+
+	// Start an HTTP server
+	Start(addr string) error
+
+	// AddRoute is a method to Create a node, including paths and HandleFunc
+	// and register it in the routing tree.
+	AddRoute(method string, path string, handler HandleFunc)
 }
 
-var _ Server = &HTTPServer{}
+// Make sure struct implements this method
+var _ ICoreServer = &CoreServer{}
 
-type HTTPServer struct {
+type CoreServer struct {
+	*router
 }
 
-func (s *HTTPServer) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
+// NewHTTPServer Returns a HTTPServer
+func NewHTTPServer() *CoreServer {
+	return &CoreServer{
+		router: newRouter(),
+	}
+}
+
+// ServeHTTP Implementing methods in the Handler interface
+func (s *CoreServer) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
 	ctx := &Context{
 		Req:  request,
 		Resp: writer,
@@ -21,17 +38,17 @@ func (s *HTTPServer) ServeHTTP(writer http.ResponseWriter, request *http.Request
 	s.serve(ctx)
 }
 
-// Start 启动服务器
-func (s *HTTPServer) Start(addr string) error {
+// Start an HTTP server
+func (s *CoreServer) Start(addr string) error {
 	return http.ListenAndServe(addr, s)
 }
 
-func (s *HTTPServer) Post(path string, handler HandleFunc) {
+func (s *CoreServer) Post(path string, handler HandleFunc) {
 }
 
-func (s *HTTPServer) Get(path string, handler HandleFunc) {
+func (s *CoreServer) Get(path string, handler HandleFunc) {
 }
 
-func (s *HTTPServer) serve(ctx *Context) {
+func (s *CoreServer) serve(ctx *Context) {
 
 }
