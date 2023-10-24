@@ -14,7 +14,27 @@ func TestRouter_AddRoute(t *testing.T) {
 	}{
 		{
 			method: http.MethodGet,
-			path:   "/path1/path2",
+			path:   "/",
+		},
+		{
+			method: http.MethodGet,
+			path:   "/user",
+		},
+		{
+			method: http.MethodGet,
+			path:   "/user/home",
+		},
+		{
+			method: http.MethodGet,
+			path:   "/order/detail",
+		},
+		{
+			method: http.MethodPost,
+			path:   "/order/create",
+		},
+		{
+			method: http.MethodPost,
+			path:   "/login",
 		},
 	}
 
@@ -23,7 +43,7 @@ func TestRouter_AddRoute(t *testing.T) {
 	}
 	r := newRouter()
 	for _, route := range testRouters {
-		r.AddRoute(route.method, route.path, mockHandler)
+		r.addRoute(route.method, route.path, mockHandler)
 	}
 
 	// check
@@ -32,15 +52,40 @@ func TestRouter_AddRoute(t *testing.T) {
 			http.MethodGet: {
 				path: "/",
 				children: map[string]*node{
-					"path1": {
-						path: "path1",
+					"user": {
+						path: "user",
 						children: map[string]*node{
-							"path2": {
-								path:     "path2",
-								children: map[string]*node{},
-								handler:  mockHandler,
+							"home": {
+								path:    "home",
+								handler: mockHandler,
 							},
 						},
+						handler: mockHandler},
+					"order": {
+						path: "order",
+						children: map[string]*node{
+							"detail": {
+								path:    "detail",
+								handler: mockHandler,
+							},
+						},
+					},
+				},
+				handler: mockHandler,
+			},
+			http.MethodPost: {
+				path: "/", children: map[string]*node{
+					"order": {
+						path: "order",
+						children: map[string]*node{
+							"create": {
+								path:    "create",
+								handler: mockHandler,
+							},
+						},
+					},
+					"login": {
+						path: "login", handler: mockHandler,
 					},
 				},
 			},
@@ -48,6 +93,43 @@ func TestRouter_AddRoute(t *testing.T) {
 	}
 	msg, ok := wantRouter.equal(r)
 	assert.True(t, ok, msg)
+
+	// 非法用例
+	r = newRouter()
+
+	// 空字符串
+	assert.PanicsWithValue(t, "web: Route is an empty string", func() {
+		r.addRoute(http.MethodGet, "", mockHandler)
+	})
+
+	// 前导没有 /
+	assert.PanicsWithValue(t, "web: Routes must start with '/'", func() {
+		r.addRoute(http.MethodGet, "a/b/c", mockHandler)
+	})
+
+	// 后缀有 /
+	assert.PanicsWithValue(t, "web: Routes cannot end in '/'", func() {
+		r.addRoute(http.MethodGet, "/a/b/c/", mockHandler)
+	})
+
+	// 根节点重复注册
+	r.addRoute(http.MethodGet, "/", mockHandler)
+	assert.PanicsWithValue(t, "web: Route has been registered [/]", func() {
+		r.addRoute(http.MethodGet, "/", mockHandler)
+	})
+	// 普通节点重复注册
+	r.addRoute(http.MethodGet, "/a/b/c", mockHandler)
+	assert.PanicsWithValue(t, "web: Route has been registered [/a/b/c]", func() {
+		r.addRoute(http.MethodGet, "/a/b/c", mockHandler)
+	})
+
+	// 多个 /
+	assert.PanicsWithValue(t, "path error [/a//b]", func() {
+		r.addRoute(http.MethodGet, "/a//b", mockHandler)
+	})
+	assert.PanicsWithValue(t, "path error [//a/b]", func() {
+		r.addRoute(http.MethodGet, "//a/b", mockHandler)
+	})
 }
 
 func (r *router) equal(y *router) (string, bool) {

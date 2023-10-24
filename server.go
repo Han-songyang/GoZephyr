@@ -12,7 +12,7 @@ type ICoreServer interface {
 
 	// AddRoute is a method to Create a node, including paths and HandleFunc
 	// and register it in the routing tree.
-	AddRoute(method string, path string, handler HandleFunc)
+	addRoute(method string, path string, handler HandleFunc)
 }
 
 // Make sure struct implements this method
@@ -22,8 +22,8 @@ type CoreServer struct {
 	*router
 }
 
-// NewHTTPServer Returns a HTTPServer
-func NewHTTPServer() *CoreServer {
+// NewCoreServer Returns a HTTPServer
+func NewCoreServer() *CoreServer {
 	return &CoreServer{
 		router: newRouter(),
 	}
@@ -43,12 +43,20 @@ func (s *CoreServer) Start(addr string) error {
 	return http.ListenAndServe(addr, s)
 }
 
-func (s *CoreServer) Post(path string, handler HandleFunc) {
+func (s *CoreServer) Get(path string, handler HandleFunc) {
+	s.addRoute(http.MethodGet, path, handler)
 }
 
-func (s *CoreServer) Get(path string, handler HandleFunc) {
+func (s *CoreServer) Post(path string, handler HandleFunc) {
+	s.addRoute(http.MethodPost, path, handler)
 }
 
 func (s *CoreServer) serve(ctx *Context) {
-
+	mi, ok := s.findRoute(ctx.Req.Method, ctx.Req.URL.Path)
+	if !ok || mi.handler == nil {
+		ctx.Resp.WriteHeader(404)
+		ctx.Resp.Write([]byte("Not Found"))
+		return
+	}
+	mi.handler(ctx)
 }
