@@ -108,7 +108,7 @@ func (r *router) findRoute(method string, path string) (*node, bool) {
 }
 
 func (n *node) childOf(path string) (*node, bool) {
-	if n.children == nil {
+	if len(n.children) == 0 {
 		return nil, false
 	}
 	res, ok := n.children[path]

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/stretchr/testify/assert"
 	"net/http"
+	"reflect"
 	"testing"
 )
 
@@ -130,6 +131,103 @@ func TestRouter_AddRoute(t *testing.T) {
 	assert.PanicsWithValue(t, "path error [//a/b]", func() {
 		r.addRoute(http.MethodGet, "//a/b", mockHandler)
 	})
+}
+
+func Test_router_findRoute(t *testing.T) {
+	testRoutes := []struct {
+		method string
+		path   string
+	}{
+		{
+			method: http.MethodGet,
+			path:   "/",
+		},
+		{
+			method: http.MethodGet,
+			path:   "/user",
+		},
+		{
+			method: http.MethodPost,
+			path:   "/order/create",
+		},
+	}
+
+	mockHandler := func(ctx *Context) {}
+
+	testCases := []struct {
+		name     string
+		method   string
+		path     string
+		found    bool
+		wantNode *node
+	}{
+		{
+			name:   "method not found",
+			method: http.MethodHead,
+		},
+		{
+			name:   "path not found",
+			method: http.MethodGet,
+			path:   "/abc",
+		},
+		{
+			name:   "root",
+			method: http.MethodGet,
+			path:   "/",
+			found:  true,
+			wantNode: &node{
+				path:    "/",
+				handler: mockHandler,
+			},
+		},
+		{
+			name:   "user",
+			method: http.MethodGet,
+			path:   "/user",
+			found:  true,
+			wantNode: &node{
+				path:    "user",
+				handler: mockHandler,
+			},
+		},
+		{
+			name:   "no handler",
+			method: http.MethodPost,
+			path:   "/order",
+			found:  true,
+			wantNode: &node{
+				path: "order",
+			},
+		},
+		{
+			name:   "two layer",
+			method: http.MethodPost,
+			path:   "/order/create",
+			found:  true,
+			wantNode: &node{
+				path:    "create",
+				handler: mockHandler,
+			},
+		},
+	}
+
+	r := newRouter()
+	for _, tr := range testRoutes {
+		r.addRoute(tr.method, tr.path, mockHandler)
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			n, found := r.findRoute(tc.method, tc.path)
+			assert.Equal(t, tc.found, found)
+			if !found {
+				return
+			}
+			wantVal := reflect.ValueOf(tc.wantNode.handler)
+			nVal := reflect.ValueOf(n.handler)
+			assert.Equal(t, wantVal, nVal)
+		})
+	}
 }
 
 func (r *router) equal(y *router) (string, bool) {
