@@ -52,11 +52,12 @@ func (s *CoreServer) Post(path string, handler HandleFunc) {
 }
 
 func (s *CoreServer) serve(ctx *Context) {
-	mi, ok := s.findRoute(ctx.Req.Method, ctx.Req.URL.Path)
-	if !ok || mi.handler == nil {
+	ni, ok := s.findRoute(ctx.Req.Method, ctx.Req.URL.Path)
+	if !ok || ni.n == nil || ni.n.handler == nil {
 		ctx.Resp.WriteHeader(404)
 		ctx.Resp.Write([]byte("Not Found"))
 		return
 	}
-	mi.handler(ctx)
+	ctx.Params = ni.params
+	ni.n.handler(ctx)
 }
