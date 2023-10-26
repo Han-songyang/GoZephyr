@@ -1,6 +1,6 @@
 # GoZephyr
 
-[![codecov](https://codecov.io/gh/Han-songyang/GoZephyr/graph/badge.svg?token=0Z3PWAKPDC)](https://codecov.io/gh/Han-songyang/GoZephyr)![](https://img.shields.io/badge/go-1.21.0-blue.svg)      
+[![codecov](https://codecov.io/gh/Han-songyang/GoZephyr/graph/badge.svg?token=0Z3PWAKPDC)](https://codecov.io/gh/Han-songyang/GoZephyr)   ![](https://img.shields.io/badge/go-1.21.0-blue.svg)      
 
 ## 📖 Introduction
 
